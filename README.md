@@ -130,7 +130,7 @@ pathname            | The URL namespace that Primus can own     | `/primus`
 parser              | Message encoder for all communication     | `JSON`
 transformer         | The transformer we should use internally  | `websockets`
 plugin              | The plugins that should be applied        | `{}`
-timeout             | Interval at which heartbeats are sent     | `30000`
+pingInterval        | Interval at which heartbeats are sent     | `30000`
 global              | Set a custom client class / global name   | `Primus`
 compression         | Use permessage-deflate / HTTP compression | `false`
 maxLength           | Maximum allowed packet size, in bytes     | `10485760`
@@ -450,7 +450,7 @@ Name                | Description                             | Default
 --------------------|-----------------------------------------|---------------
 [reconnect]         | Configures the exponential back off     | `{}`
 timeout             | Connect time out                        | `10000` ms
-ping                | Max time to wait for a server ping      | `45000` ms
+pingTimeout         | Max time to wait for a server ping      | `45000` ms
 [strategy]          | Our reconnect strategies                | `"disconnect,online,timeout"`
 manual              | Manually open the connection            | `false`
 websockets          | Should we use WebSockets                | Boolean, is detected
