@@ -10,7 +10,7 @@ var parse = require('url').parse
  * @api private
  */
 module.exports = function server() {
-  var uws = require('uws').uws
+  var uws = require('uws')
     , Spark = this.Spark;
 
   var service = this.service = new uws.Server();
