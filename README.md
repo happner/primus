@@ -128,32 +128,42 @@ var server = http.createServer(/* request handler */)
 ```
 The following options can be provided:
 
-| Name          | Description                              | Default                            |
-| ------------- | ---------------------------------------- | ---------------------------------- |
-| authorization | Authorization handler                    | `null`                             |
-| pathname      | The URL namespace that Primus can own    | `/primus`                          |
-| parser        | Message encoder for all communication    | `JSON`                             |
-| transformer   | The transformer we should use internally | `websockets`                       |
-| plugin        | The plugins that should be applied       | `{}`                               |
-| timeout       | The heartbeat timeout                    | `35000`                            |
-| global        | Set a custom client class / global name  | `Primus`                           |
-| compression   | Use permessage-deflate / HTTP compression | `false`                            |
-| origins       | **cors** List of origins                 | `*`                                |
-| methods       | **cors** List of accepted HTTP methods   | `GET,HEAD,PUT,POST,DELETE,OPTIONS` |
-| credentials   | **cors** Allow sending of credentials    | `true`                             |
-| maxAge        | **cors** Cache duration of CORS preflight | `30 days`                          |
-| headers       | **cors** Allowed headers                 | `false`                            |
-| exposed       | **cors** Headers exposed to the client   | `false`                            |
+| Name                   | Description                              | Default                            |
+| ---------------------- | ---------------------------------------- | ---------------------------------- |
+| authorization          | Authorization handler                    | `null`                             |
+| pathname               | The URL namespace that Primus can own    | `/primus`                          |
+| parser                 | Message encoder for all communication    | `JSON`                             |
+| transformer            | The transformer we should use internally | `websockets`                       |
+| plugin                 | The plugins that should be applied       | `{}`                               |
+| timeout                | The heartbeat timeout (__ignored, server learns timeout from client on connect__) | `35000`                            |
+| allowSkippedHeartBeats | To allow waylaid pings                   | `2`                                |
+| global                 | Set a custom client class / global name  | `Primus`                           |
+| compression            | Use permessage-deflate / HTTP compression | `false`                            |
+| origins                | **cors** List of origins                 | `*`                                |
+| methods                | **cors** List of accepted HTTP methods   | `GET,HEAD,PUT,POST,DELETE,OPTIONS` |
+| credentials            | **cors** Allow sending of credentials    | `true`                             |
+| maxAge                 | **cors** Cache duration of CORS preflight | `30 days`                          |
+| headers                | **cors** Allowed headers                 | `false`                            |
+| exposed                | **cors** Headers exposed to the client   | `false`                            |
 
 The options that are prefixed with **cors** are supplied to our
 [access-control](https://github.com/primus/access-control) module which handles
 HTTP Access Control (CORS), so for a more detailed explanation of these options
 check it out.
 
-The heartbeat timeout is used to forcefully disconnect a spark if no data is
-received from the client within the specified amount of time. It is possible
-to completely disable the heartbeat timeout by setting the value of the
-`timeout` option to `false`.
+The `heartbeat timeout` is used to disconnect the client if no ping arrives within that time. The timeout is not configurable, instead it is learned from the client's connect url. This allows the server to handle new client deployments with longer timeouts as well as older deployments with shorter/default timeouts. The connecting url includes the client's ping and pong values. It calculates an appropriate `heartbeat timeout` as `ping + (pong / 2)`. The division by 2 allows for the server to emit  pongs to the client sufficiently timeously to avert the waylaid ping conundrum as described below.
+
+The waylaid ping conundrum occurs when the client sends a payload whose transmission time exceeds the heartbeat timeout at the server. Although the client sent the ping in time, its arrival at the server is delayed behind the large payload. So either the server closes the socket because no ping arrived in time or the client closes the socket because the server never replied with a pong in time.
+
+To avert this problem the server can be configured to allow for the missing heartbeats/pings by setting the `allowSkippedHeartBeats` option sufficiently large to encompass the duration of the large payload's transmission, specifically, `allowSkippedHeartBeats` x `heartbeat timeout` should be long enough to transmit the payload.
+
+That solves the problem of the server closing the socket for a limited number of missed pings.
+
+To solve the problem of the client closing the socket the server sends a unsolicited pong to the client when the heartbeat is skipped. For this to work the pong needs to be sent before the client times out waiting for it. To achieve this the heatbeat timeout at the server (as calculated from the connect url with the formula above) exceeds the client's ping interval to prevent the sending of unnecessary pongs, but does not exceed the client's ping interval plus pong timeout so that the unsolicited pong does arrive at the client in time.
+
+For already deplyed clients the pong timeout is 10000ms. This means that the defaulted `heartbeat timeout` at the server will cause the server to emit the unsolicited pong with only 5000ms client-bound transmission latency leeway before the client-side timeout closes the socket.
+
+For new deployments the client's deafult pong timeout is increased to 20000ms. Allowing for a 10000ms latency.
 
 If you don't have a pre-existing server where you want or can attach your Primus
 server to you can also use the `Primus.createServer` convenience method. The
@@ -447,7 +457,7 @@ The following options can be provided:
 | ----------- | --------------------------------------- | ----------------------------- |
 | [reconnect] | Configures the exponential back off     | `{}`                          |
 | timeout     | Connect time out                        | `10000` ms                    |
-| ping        | Ping interval to test connection        | `25000` ms                    |
+| ping        | Ping interval to test connection        | `25000` ms (0 to disable)     |
 | pong        | Time the server has to respond to ping  | `10000` ms                    |
 | [strategy]  | Our reconnect strategies                | `"disconnect,online,timeout"` |
 | manual      | Manually open the connection            | `false`                       |
