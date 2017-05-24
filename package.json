@@ -44,8 +44,7 @@
     "transformers",
     "websocket",
     "websockets",
-    "ws",
-    "uws"
+    "ws"
   ],
   "author": "Arnout Kazemier",
   "license": "MIT",

@@ -27,10 +27,10 @@ various real-time frameworks.
    Node.js as well, write once, run it everywhere.
 6. Fixes various of bugs in the supported frameworks and additional stability
    patches to improve real-time communication.
-8. Comes with an amazing plugin interface to keep the core library as fast and
+7. Comes with an amazing plugin interface to keep the core library as fast and
    lean as possible while still allowing the server and the client to be
    extended.
-9. Last but not least, Primus is built with love, passion and dedication to the
+8. Last but not least, Primus is built with love, passion and dedication to the
    real-time web.
 
 ```
@@ -78,7 +78,6 @@ repository.
   - [lws](#lws)
   - [Socket.IO](#socketio)
   - [SockJS](#sockjs)
-  - [uws](#uws)
   - [WebSockets](#websockets)
 - [Transformer inconsistencies](#transformer-inconsistencies)
 - [Parsers](#parsers)
@@ -127,22 +126,22 @@ var server = http.createServer(/* request handler */)
 ```
 The following options can be provided:
 
-Name                | Description                               | Default
---------------------|-------------------------------------------|---------------
-authorization       | Authorization handler                     | `null`
-pathname            | The URL namespace that Primus can own     | `/primus`
-parser              | Message encoder for all communication     | `JSON`
-transformer         | The transformer we should use internally  | `websockets`
-plugin              | The plugins that should be applied        | `{}`
-timeout             | The heartbeat timeout                     | `35000`
-global              | Set a custom client class / global name   | `Primus`
-compression         | Use permessage-deflate / HTTP compression | `false`
-origins             | **cors** List of origins                  | `*`
-methods             | **cors** List of accepted HTTP methods    | `GET,HEAD,PUT,POST,DELETE,OPTIONS`
-credentials         | **cors** Allow sending of credentials     | `true`
-maxAge              | **cors** Cache duration of CORS preflight | `30 days`
-headers             | **cors** Allowed headers                  | `false`
-exposed             | **cors** Headers exposed to the client    | `false`
+| Name          | Description                              | Default                            |
+| ------------- | ---------------------------------------- | ---------------------------------- |
+| authorization | Authorization handler                    | `null`                             |
+| pathname      | The URL namespace that Primus can own    | `/primus`                          |
+| parser        | Message encoder for all communication    | `JSON`                             |
+| transformer   | The transformer we should use internally | `websockets`                       |
+| plugin        | The plugins that should be applied       | `{}`                               |
+| timeout       | The heartbeat timeout                    | `35000`                            |
+| global        | Set a custom client class / global name  | `Primus`                           |
+| compression   | Use permessage-deflate / HTTP compression | `false`                            |
+| origins       | **cors** List of origins                 | `*`                                |
+| methods       | **cors** List of accepted HTTP methods   | `GET,HEAD,PUT,POST,DELETE,OPTIONS` |
+| credentials   | **cors** Allow sending of credentials    | `true`                             |
+| maxAge        | **cors** Cache duration of CORS preflight | `30 days`                          |
+| headers       | **cors** Allowed headers                 | `false`                            |
+| exposed       | **cors** Headers exposed to the client   | `false`                            |
 
 The options that are prefixed with **cors** are supplied to our
 [access-control](https://github.com/primus/access-control) module which handles
@@ -442,18 +441,18 @@ If no `url` argument is passed, it will default to the current URL.
 
 The following options can be provided:
 
-Name                | Description                             | Default
---------------------|-----------------------------------------|---------------
-[reconnect]         | Configures the exponential back off     | `{}`
-timeout             | Connect time out                        | `10000` ms
-ping                | Ping interval to test connection        | `25000` ms
-pong                | Time the server has to respond to ping  | `10000` ms
-[strategy]          | Our reconnect strategies                | `"disconnect,online,timeout"`
-manual              | Manually open the connection            | `false`
-websockets          | Should we use WebSockets                | Boolean, is detected
-network             | Use native `online`/`offline` detection | Boolean, is feature detected
-transport           | Transport specific configuration        | `{}`
-queueSize           | Number of messages that can be queued   | `Infinity`
+| Name        | Description                             | Default                       |
+| ----------- | --------------------------------------- | ----------------------------- |
+| [reconnect] | Configures the exponential back off     | `{}`                          |
+| timeout     | Connect time out                        | `10000` ms                    |
+| ping        | Ping interval to test connection        | `25000` ms                    |
+| pong        | Time the server has to respond to ping  | `10000` ms                    |
+| [strategy]  | Our reconnect strategies                | `"disconnect,online,timeout"` |
+| manual      | Manually open the connection            | `false`                       |
+| websockets  | Should we use WebSockets                | Boolean, is detected          |
+| network     | Use native `online`/`offline` detection | Boolean, is feature detected  |
+| transport   | Transport specific configuration        | `{}`                          |
+| queueSize   | Number of messages that can be queued   | `Infinity`                    |
 
 There are 2 important options that we're going to look a bit closer at.
 
@@ -465,13 +464,13 @@ from DDoSing your server when you reboot as they will all be re-connecting at
 different times. The reconnection can be configured using the `options` argument
 in `Primus` and you should add these options to the `reconnect` property:
 
-Name                | Description                              | Default
---------------------|------------------------------------------|---------------
-max                 | Maximum delay for a reconnection attempt | `Infinity`
-min                 | Minimum delay for a reconnection attempt | `500` ms
-retries             | Maximum amount of attempts               | `10`
-reconnect timeout   | Maximum time for an attempt to complete  | `30000` ms
-factor              | Exponential back off factor              | `2`
+| Name              | Description                              | Default    |
+| ----------------- | ---------------------------------------- | ---------- |
+| max               | Maximum delay for a reconnection attempt | `Infinity` |
+| min               | Minimum delay for a reconnection attempt | `500` ms   |
+| retries           | Maximum amount of attempts               | `10`       |
+| reconnect timeout | Maximum time for an attempt to complete  | `30000` ms |
+| factor            | Exponential back off factor              | `2`        |
 
 ```js
 primus = Primus.connect(url, {
@@ -811,6 +810,7 @@ a server side client.
    ```js
    var Socket = Primus.createSocket({ transformer: transformer, parser: parser })
      , client = new Socket('http://localhost:8080');
+   ```
   ```
 
 When you are using plugins with Primus make sure you add them **before** you
@@ -818,7 +818,7 @@ reference the `primus.Socket` or it will compile a client without your plugins.
 If you're using the `Primus.createSocket` api you can directly supply the
 plugins as part of the options as it supports `plugin` object:
 
-```js
+​```js
 var Socket = Primus.createSocket({
   transformer: transformer,
   parser: parser,
@@ -827,7 +827,7 @@ var Socket = Primus.createSocket({
     'substream': require('substream')
   }
 });
-```
+  ```
 
 The constructor returned by `primus.Socket` or `Primus.createSocket` has the
 same signature of the constructor used to connect from the browser. This
@@ -1073,43 +1073,43 @@ primus.destroy({ timeout: 10000 });
 Primus is built upon the Stream and EventEmitter interfaces. This is a summary
 of the events emitted by Primus.
 
-Event                 | Usage       | Location      | Description
-----------------------|-------------|---------------|----------------------------------------
-`outgoing::reconnect` | private     | client        | Transformer should reconnect.
-`reconnect scheduled` | **public**  | client        | We're scheduling a reconnect.
-`reconnect`           | **public**  | client        | Reconnect attempt is about to be made.
-`reconnected`         | **public**  | client        | Successfully reconnected.
-`reconnect timeout`   | **public**  | client        | Reconnect attempt took too much time.
-`reconnect failed`    | **public**  | client        | Failed to reconnect.
-`timeout`             | **public**  | client        | Failed to connect to server.
-`outgoing::open`      | private     | client/spark  | Transformer should connect.
-`incoming::open`      | private     | client/spark  | Transformer has connected.
-`open`                | **public**  | client        | Connection is open.
-`destroy`             | **public**  | client        | The instance has been destroyed.
-`incoming::error`     | private     | client        | Transformer received an error.
-`error`               | **public**  | client/spark  | An error happened.
-`incoming::data`      | private     | client/server | Transformer received data.
-`outgoing::data`      | private     | client/spark  | Transformer should write data.
-`data`                | **public**  | client/spark  | We received data.
-`incoming::end`       | private     | client/spark  | Transformer closed the connection.
-`outgoing::end`       | private     | client/spark  | Transformer should close connection.
-`end`                 | **public**  | client/spark  | The connection has ended.
-`close`               | **public**  | client/server | The connection has closed, we might reconnect. / The server has been destroyed.
-`connection`          | **public**  | server        | We received a new connection.
-`disconnection`       | **public**  | server        | We received a disconnection.
-`initialised`         | **public**  | server        | The server is initialised.
-`plugin`              | **public**  | server        | A new plugin has been added.
-`plugout`             | **public**  | server        | A plugin has been removed.
-`incoming::ping`      | private     | spark         | We received a ping message.
-`outgoing::ping`      | private     | client        | We're sending a ping message.
-`incoming::pong`      | private     | client        | We received a pong message.
-`outgoing::pong`      | private     | spark         | We're sending a pong message.
-`heartbeat`           | **public**  | spark         | We've received a heartbeat and have reset the timer.
-`online`              | **public**  | client        | We've regained a network connection.
-`offline`             | **public**  | client        | We've lost our internet connection.
-`log`                 | **public**  | server        | Log messages.
-`readyStateChange`    | **public**  | client/spark  | The readyState has changed.
-`outgoing::url`       | private     | client        | The options used to construct the URL.
+| Event                 | Usage      | Location      | Description                              |
+| --------------------- | ---------- | ------------- | ---------------------------------------- |
+| `outgoing::reconnect` | private    | client        | Transformer should reconnect.            |
+| `reconnect scheduled` | **public** | client        | We're scheduling a reconnect.            |
+| `reconnect`           | **public** | client        | Reconnect attempt is about to be made.   |
+| `reconnected`         | **public** | client        | Successfully reconnected.                |
+| `reconnect timeout`   | **public** | client        | Reconnect attempt took too much time.    |
+| `reconnect failed`    | **public** | client        | Failed to reconnect.                     |
+| `timeout`             | **public** | client        | Failed to connect to server.             |
+| `outgoing::open`      | private    | client/spark  | Transformer should connect.              |
+| `incoming::open`      | private    | client/spark  | Transformer has connected.               |
+| `open`                | **public** | client        | Connection is open.                      |
+| `destroy`             | **public** | client        | The instance has been destroyed.         |
+| `incoming::error`     | private    | client        | Transformer received an error.           |
+| `error`               | **public** | client/spark  | An error happened.                       |
+| `incoming::data`      | private    | client/server | Transformer received data.               |
+| `outgoing::data`      | private    | client/spark  | Transformer should write data.           |
+| `data`                | **public** | client/spark  | We received data.                        |
+| `incoming::end`       | private    | client/spark  | Transformer closed the connection.       |
+| `outgoing::end`       | private    | client/spark  | Transformer should close connection.     |
+| `end`                 | **public** | client/spark  | The connection has ended.                |
+| `close`               | **public** | client/server | The connection has closed, we might reconnect. / The server has been destroyed. |
+| `connection`          | **public** | server        | We received a new connection.            |
+| `disconnection`       | **public** | server        | We received a disconnection.             |
+| `initialised`         | **public** | server        | The server is initialised.               |
+| `plugin`              | **public** | server        | A new plugin has been added.             |
+| `plugout`             | **public** | server        | A plugin has been removed.               |
+| `incoming::ping`      | private    | spark         | We received a ping message.              |
+| `outgoing::ping`      | private    | client        | We're sending a ping message.            |
+| `incoming::pong`      | private    | client        | We received a pong message.              |
+| `outgoing::pong`      | private    | spark         | We're sending a pong message.            |
+| `heartbeat`           | **public** | spark         | We've received a heartbeat and have reset the timer. |
+| `online`              | **public** | client        | We've regained a network connection.     |
+| `offline`             | **public** | client        | We've lost our internet connection.      |
+| `log`                 | **public** | server        | Log messages.                            |
+| `readyStateChange`    | **public** | client/spark  | The readyState has changed.              |
+| `outgoing::url`       | private    | client        | The options used to construct the URL.   |
 
 As a rule of thumb assume that every event that is prefixed with `incoming::` or
 `outgoing::` is reserved for internal use only and that emitting such events your
@@ -1364,36 +1364,6 @@ var Socket = primus.Socket
   , socket = new Socket('url');
 ```
 
-### uws
-
-uws is a WebSocket only transformer. It uses the `uws` module which is probably
-the fastest WebSocket server available in Node.js. To use uws you have to
-install the `uws` module:
-
-```
-npm install uws --save
-```
-
-And tell `Primus` that you want to use `uws` as transformer:
-
-```js
-var primus = new Primus(server, { transformer: 'uws' });
-```
-
-If you want to use the client interface inside of Node.js you also need to
-install the `ws` module:
-
-```
-npm install ws --save
-```
-
-And then you can access it from your server instance:
-
-```js
-var Socket = primus.Socket
-  , socket = new Socket('url');
-```
-
 #### WebSockets
 
 If you are targeting a high end audience or maybe just need something for
@@ -1439,8 +1409,6 @@ of the transformer, we just `toLowerCase()` everything.
   5.
 - lws does not currently support HTTPS to WSS. To work around this limitation
   you can use a SSL terminating reverse proxy.
-- uws works only on Node.js version 4 or above.
-- uws does not currently support compression (permessage-deflate).
 
 ### Parsers
 
