@@ -69,6 +69,7 @@ try {
  * @api public
  */
 function Primus(url, options) {
+
   if (!(this instanceof Primus)) return new Primus(url, options);
   if ('function' !== typeof this.client) {
     var message = 'The client library has not been compiled correctly, ' +
@@ -95,10 +96,10 @@ function Primus(url, options) {
   options.reconnect = 'reconnect' in options ? options.reconnect : {};
 
   // Heartbeat ping interval. Not really an interval, it's a timeout (re)set on socket connected or arriving pong.
-  options.ping = 'ping' in options ? options.ping : 25e3;
+  options.ping = 'ping' in options ? options.ping : 60e3;
 
   // Heartbeat pong response timeout. Client closes the socket after this long if server does not pong the ping.
-  options.pong = 'pong' in options ? options.pong : 10e3;
+  options.pong = 'pong' in options ? options.pong : 20e3;
 
   // Reconnect strategies.
   options.strategy = 'strategy' in options ? options.strategy : [];
@@ -1112,7 +1113,9 @@ Primus.prototype.uri = function uri(options) {
   var querystring = this.querystring(options.query || '');
   querystring._primuscb = yeast();
 
-  // include clientside ping and pong timeouts in connect url for server.
+  //
+  // Include clientside ping and pong timeouts in connect url for server.
+  //
   querystring.ping = this.options.ping;
   querystring.pong = this.options.pong;
 

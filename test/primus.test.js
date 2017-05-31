@@ -540,13 +540,13 @@ describe('Primus', function () {
     });
 
     it('updates the default value of the `ping` option', function (done) {
-      var primus = new Primus(server, { timeout: 60000 })
-        , socket = new primus.Socket('http://localhost:'+ server.portnumber);
+      var primus = new Primus(server)
+        , socket = new primus.Socket('http://localhost:'+ server.portnumber, { ping: 10000 });
 
-      expect(socket.options.ping).to.equal(50000);
+      expect(socket.options.ping).to.equal(10000);
       socket.on('open', socket.end).on('end', function () {
-        primus = new Primus(server, { timeout: false });
-        socket = primus.Socket('http://localhost:'+ server.portnumber);
+        primus = new Primus(server);
+        socket = primus.Socket('http://localhost:'+ server.portnumber, { ping: false });
 
         expect(socket.options.ping).to.equal(false);
         socket.on('open', socket.end).on('end', done);

@@ -145,6 +145,7 @@ The following options can be provided:
 | maxAge                 | **cors** Cache duration of CORS preflight | `30 days`                          |
 | headers                | **cors** Allowed headers                 | `false`                            |
 | exposed                | **cors** Headers exposed to the client   | `false`                            |
+| pongSkipTime           | deduplicate songs                        | `1000ms`                           |
 
 The options that are prefixed with **cors** are supplied to our
 [access-control](https://github.com/primus/access-control) module which handles

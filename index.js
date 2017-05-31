@@ -45,7 +45,27 @@ function Primus(server, options) {
   this.whitelist = [];                        // Forwarded-for white listing.
   this.options = options;                     // The configuration.
 
-  if (!this.options.allowSkippedHeartBeats) this.options.allowSkippedHeartBeats = 0;
+  // Server allows for skipping over missed pings/heartbeats from client so that
+  // pings caught behind a large payload don't cause the server to close the socket.
+  // Additionally the server sends an unsolicited pong to the client whenever the
+  // heartbeat skips. This prevents the client from closing the socket on missing pong.
+  // The server's heartbeat is set to `ping + (pong / 2)` so that the unsolicited pong
+  // is sent to the client before the pong timeout at the client but after the client
+  // would normally ping to prevent the client from never pinging.
+  // The server learns the values of clientside ping and pong from the client's
+  // connect url, see spark.js.
+  if (!this.options.allowSkippedHeartBeats) this.options.allowSkippedHeartBeats = 2;
+
+  // Skipped heartbeat must not be less than 2 to allow for high network latencies greater
+  // than `(pong / 2) / 2` causing the clients ping to already be inbound when the skip occurs.
+  if (this.options.allowSkippedHeartBeats < 2) this.options.allowSkippedHeartBeats = 2;
+
+  // De-duplicate pongs if multiple attempts to send one within this time.
+  // This is necessary because when pings are queued up behind a large payload
+  // they all arrive at once after the payload. This de-duplication causes only
+  // one pong in reply. If multiple pong replies were sent, then the client
+  // would respond with multiple pings again in endless cycle.
+  options.pongSkipTime = options.pongSkipTime || 1000;
 
   this.transformers = {                       // Message transformers.
     outgoing: [],

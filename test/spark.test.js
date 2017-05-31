@@ -308,11 +308,11 @@ describe('Spark', function () {
       spark.heartbeat();
     });
 
-    it('emits `heartbeat` when data is received', function (done) {
+    it('emits `heartbeat` when ping is received', function (done) {
       var spark = new primus.Spark();
 
       spark.on('heartbeat', done);
-      spark.emit('incoming::data', JSON.stringify('data'));
+      spark.emit('incoming::ping', JSON.stringify('data'));
     });
 
     it('calls heartbeat on a ping event without a timestamp', function (done) {
