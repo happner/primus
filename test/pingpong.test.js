@@ -113,189 +113,193 @@ describe('pingpong', function () {
 
     });
 
-    context('with latency ' + latency +
-      ' (scaled down from ' + latency * scaleDown + ') and large payload not exceeding allowed skip', function () {
+    if (!process.version.match(/^v0\.10/)) {
 
-      // Ensure that connection resumes properly when large payload transmission time
-      // does not exceed allowedSkip time.
+      context('with latency ' + latency +
+        ' (scaled down from ' + latency * scaleDown + ') and large payload not exceeding allowed skip', function () {
+
+        // Ensure that connection resumes properly when large payload transmission time
+        // does not exceed allowedSkip time.
 
 
-      before('start client', function (done) {
-        this.timeout(20000);
+        before('start client', function (done) {
+          this.timeout(20000);
 
-        this.relay.latency = latency;
+          this.relay.latency = latency;
 
-        this.client = new Client(this.primusServer);
-        this.client.start('http://localhost:' + relayPort, {
-          ping: defaultPing / scaleDown,
-          pong: defaultPong / scaleDown
-        }, done);
-      });
+          this.client = new Client(this.primusServer);
+          this.client.start('http://localhost:' + relayPort, {
+            ping: defaultPing / scaleDown,
+            pong: defaultPong / scaleDown
+          }, done);
+        });
 
-      it('does expected event pattern', function (done) {
-        this.timeout(31000);
-        var _this = this;
+        it('does expected event pattern', function (done) {
+          this.timeout(31000);
+          var _this = this;
 
-        // Ensure that the socket is not disconnected when the pings
-        // are caught behind a large payload whose transmission time
-        // does not exceed the allowedSkip at the server.
+          // Ensure that the socket is not disconnected when the pings
+          // are caught behind a large payload whose transmission time
+          // does not exceed the allowedSkip at the server.
 
-        this.relay.startLargePayload();
+          this.relay.startLargePayload();
 
-        // End the large payload before the server closes the socket
-        // ie. after 2 skips
+          // End the large payload before the server closes the socket
+          // ie. after 2 skips
 
-        function onSkip(count) {
-          if (count == 2) {
-            _this.primusServer.removeListener('heartbeat-skipped', onSkip);
-            setTimeout(function () {
-              _this.relay.stopLargePayload();
-            }, 100);
+          function onSkip(count) {
+            if (count == 2) {
+              _this.primusServer.removeListener('heartbeat-skipped', onSkip);
+              setTimeout(function () {
+                _this.relay.stopLargePayload();
+              }, 100);
+            }
           }
-        }
 
-        this.primusServer.on('heartbeat-skipped', onSkip);
+          this.primusServer.on('heartbeat-skipped', onSkip);
 
-        setTimeout(function () {
+          setTimeout(function () {
 
-          _this.client.stop();
-          if (latency == ((defaultPong / 4) - 100) / scaleDown) {
-            expect(_this.client.eventPattern).to.eql([
-              'sent ping',
-              'skipped 1',
-              'received pong',
-              'sent ping',
-              'skipped 2',
-              'received pong',
-              'sent ping',
-              'received pong',
-              'sent ping',
-              'received pong',
-              'sent ping',
-              'received pong'
-            ]);
-          } else if (latency == ((defaultPong / 4) + 100) / scaleDown) {
+            _this.client.stop();
+            if (latency == ((defaultPong / 4) - 100) / scaleDown) {
+              expect(_this.client.eventPattern).to.eql([
+                'sent ping',
+                'skipped 1',
+                'received pong',
+                'sent ping',
+                'skipped 2',
+                'received pong',
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'received pong'
+              ]);
+            } else if (latency == ((defaultPong / 4) + 100) / scaleDown) {
 
-            if (_this.client.eventPattern[_this.client.eventPattern.length - 1] != 'skipped 1') {
-              // timeout is borderline on this last event being present
-              _this.client.eventPattern.push('skipped 1');
+              if (_this.client.eventPattern[_this.client.eventPattern.length - 1] != 'skipped 1') {
+                // timeout is borderline on this last event being present
+                _this.client.eventPattern.push('skipped 1');
+              }
+
+              expect(_this.client.eventPattern).to.eql([
+                'sent ping',
+                'skipped 1',
+                'received pong',
+                'sent ping',
+                'skipped 2',
+                'received pong',
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'skipped 1',
+                'received pong',
+                'sent ping',
+                'skipped 1'
+              ]);
+            } else {
+              throw new Error('Missing test.');
             }
 
-            expect(_this.client.eventPattern).to.eql([
-              'sent ping',
-              'skipped 1',
-              'received pong',
-              'sent ping',
-              'skipped 2',
-              'received pong',
-              'sent ping',
-              'received pong',
-              'sent ping',
-              'skipped 1',
-              'received pong',
-              'sent ping',
-              'skipped 1'
-            ]);
-          } else {
-            throw new Error('Missing test.');
+            done();
+
+          }, 30000);
+
+        });
+
+      });
+
+      context('with latency ' + latency +
+        ' (scaled down from ' + latency * scaleDown + ') and large payload exceeding allowed skip', function () {
+
+        // Ensure that connection resumes properly when large payload transmission time
+        // does exceed allowedSkip time.
+
+
+        before('start client', function (done) {
+          this.timeout(20000);
+
+          this.relay.latency = latency;
+
+          this.client = new Client(this.primusServer);
+          this.client.start('http://localhost:' + relayPort, {
+            ping: defaultPing / scaleDown,
+            pong: defaultPong / scaleDown
+          }, done);
+        });
+
+        it('does expected event pattern', function (done) {
+          this.timeout(31000);
+          var _this = this;
+
+          // Ensure that the socket is disconnected when the pings
+          // are caught behind a large payload whose transmission time
+          // exceeds the allowedSkip at the server.
+
+          this.relay.startLargePayload();
+
+          function onFlatline() {
+            _this.primusServer.removeListener('flatline', onFlatline);
+            setTimeout(function () {
+              _this.relay.stopLargePayload(); // allows proper socket close()
+            }, 100);
           }
 
-          done();
+          this.primusServer.on('flatline', onFlatline);
 
-        }, 30000);
-
-      });
-
-    });
-
-    context('with latency ' + latency +
-      ' (scaled down from ' + latency * scaleDown + ') and large payload exceeding allowed skip', function () {
-
-      // Ensure that connection resumes properly when large payload transmission time
-      // does not exceed allowedSkip time.
-
-
-      before('start client', function (done) {
-        this.timeout(20000);
-
-        this.relay.latency = latency;
-
-        this.client = new Client(this.primusServer);
-        this.client.start('http://localhost:' + relayPort, {
-          ping: defaultPing / scaleDown,
-          pong: defaultPong / scaleDown
-        }, done);
-      });
-
-      it('does expected event pattern', function (done) {
-        this.timeout(31000);
-        var _this = this;
-
-        // Ensure that the socket is disconnected when the pings
-        // are caught behind a large payload whose transmission time
-        // exceeds the allowedSkip at the server.
-
-        this.relay.startLargePayload();
-
-        function onFlatline() {
-          _this.primusServer.removeListener('flatline', onFlatline);
           setTimeout(function () {
-            _this.relay.stopLargePayload(); // allows proper socket close()
-          }, 100);
-        }
 
-        this.primusServer.on('flatline', onFlatline);
+            _this.client.stop();
 
-        setTimeout(function () {
+            if (latency == ((defaultPong / 4) - 100) / scaleDown) {
 
-          _this.client.stop();
+              expect(_this.client.eventPattern).to.eql([
+                'sent ping',
+                'skipped 1',
+                'received pong',
+                'sent ping',
+                'skipped 2',
+                'received pong',
+                'sent ping',
+                'flatline',
+                'reconnect',
+                'reconnected',
+                'sent ping',
+                'received pong'
+              ]);
 
-          if (latency == ((defaultPong / 4) - 100) / scaleDown) {
+            } else if (latency == ((defaultPong / 4) + 100) / scaleDown) {
 
-            expect(_this.client.eventPattern).to.eql([
-              'sent ping',
-              'skipped 1',
-              'received pong',
-              'sent ping',
-              'skipped 2',
-              'received pong',
-              'sent ping',
-              'flatline',
-              'reconnect',
-              'reconnected',
-              'sent ping',
-              'received pong'
-            ]);
+              expect(_this.client.eventPattern).to.eql([
+                'sent ping',
+                'skipped 1',
+                'received pong',
+                'sent ping',
+                'skipped 2',
+                'received pong',
+                'sent ping',
+                'flatline',
+                'reconnect',
+                'reconnected',
+                'sent ping',
+                'skipped 1',
+                'received pong'
+              ]);
 
-          } else if (latency == ((defaultPong / 4) + 100) / scaleDown) {
+            } else {
+              throw new Error('Missing test.');
+            }
 
-            expect(_this.client.eventPattern).to.eql([
-              'sent ping',
-              'skipped 1',
-              'received pong',
-              'sent ping',
-              'skipped 2',
-              'received pong',
-              'sent ping',
-              'flatline',
-              'reconnect',
-              'reconnected',
-              'sent ping',
-              'skipped 1',
-              'received pong'
-            ]);
+            done();
 
-          } else {
-            throw new Error('Missing test.');
-          }
+          }, 30000);
 
-          done();
-
-        }, 30000);
+        });
 
       });
 
-    });
+    }
 
   });
 
