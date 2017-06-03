@@ -424,7 +424,7 @@ describe('Primus', function () {
       });
     });
 
-    it.only('iterates over all active connections asynchronously', function (done) {
+    it('iterates over all active connections asynchronously', function (done) {
       var initial = 4
         , iterations = 0;
 

@@ -79,8 +79,6 @@ function Spark(primus, headers, address, query, id, request) {
   this.query.ping = parseInt(this.query.ping);
   this.query.pong = parseInt(this.query.pong);
 
-  console.log(this.query);
-
   this.heartbeat().__initialise.forEach(function execute(initialise) {
     initialise.call(spark);
   });
