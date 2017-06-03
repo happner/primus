@@ -6,3 +6,4 @@ test/primus.save.sync.js
 .DS_Store
 dist
 .idea
+examine

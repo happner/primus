@@ -175,7 +175,9 @@ describe('Spark', function () {
 
   describe('#timeout', function () {
     it('disconnects if the timeout expires', function (done) {
-      var primus = new Primus(server, { timeout: 25 });
+      var primus = new Primus(server, {
+        // timeout: 25 // timeout now inherited from client connect url or default
+      });
 
       primus.on('disconnection', function (socket) {
         expect(socket).to.equal(spark);
@@ -186,12 +188,12 @@ describe('Spark', function () {
         expect(socket).to.equal(spark);
       });
 
-      var spark = new primus.Spark();
+      var spark = new primus.Spark(null, null, 'ping=25&pong=10');
     });
 
     it('can disable the disconnect timeout', function (done) {
       var primus = new Primus(server, { timeout: false })
-        , spark = new primus.Spark();
+        , spark = new primus.Spark(null, null, 'ping=false');
 
       spark.on('data', function (msg) {
         expect(msg).to.equal('foo');
@@ -308,11 +310,11 @@ describe('Spark', function () {
       spark.heartbeat();
     });
 
-    it('emits `heartbeat` when data is received', function (done) {
+    it('emits `heartbeat` when ping is received', function (done) {
       var spark = new primus.Spark();
 
       spark.on('heartbeat', done);
-      spark.emit('incoming::data', JSON.stringify('data'));
+      spark.emit('incoming::ping', JSON.stringify('data'));
     });
 
     it('calls heartbeat on a ping event without a timestamp', function (done) {

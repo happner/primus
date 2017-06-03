@@ -55,6 +55,30 @@ function Spark(primus, headers, address, query, id, request) {
     this.query = parse(this.query);
   }
 
+  //
+  // Server now learns the clientside pong/pong config from connect url.
+  // For old (already deployed clients) it assumes the clientside defaults.
+  //
+  if (!this.query.ping) {
+    this.query.ping = '25000'; // default as already deployed older clients
+  }
+  if (!this.query.pong) {
+    this.query.pong = '10000'; // default as already deployed older clients
+  }
+
+  //
+  // Don't start heartbeat if client disabled ping
+  //
+  if (this.query.ping == 'false') {
+    this.__initialise.forEach(function execute(initialise) {
+      initialise.call(spark);
+    });
+    return;
+  }
+
+  this.query.ping = parseInt(this.query.ping);
+  this.query.pong = parseInt(this.query.pong);
+
   this.heartbeat().__initialise.forEach(function execute(initialise) {
     initialise.call(spark);
   });
@@ -106,13 +130,20 @@ Spark.get('address', function address() {
 Spark.readable('heartbeat', function heartbeat() {
   var spark = this;
 
-  clearTimeout(spark.timeout);
+  // Timeout set according to client's ping and pong values:
+  // 1. Timeout longer than client `ping timeout` to prevent early skip resulting in unnecessary
+  //    unsolicited pongs being sent. Also to support possible client implemtations when next ping
+  //    timeout is reset on arriving pong, resulting in it never sending a ping.
+  // 2. Timeout shorter that client `ping timeout + pong timeout` so that the unsolicited
+  //    pong as sent at skip arrives at the client in time.
+  //
+  var customTimeout = this.query.ping + (this.query.pong / 2);
 
-  if (!spark.primus.timeout) return spark;
+  clearTimeout(spark.timeout);
 
   spark.__skipped = 0;
 
-  log('setting new heartbeat timeout for %s', spark.id);
+  log('setting new heartbeat timeout for %s as %dms', spark.id, customTimeout);
 
   var heartBeatTimeout = function(delay){
 
@@ -120,31 +151,64 @@ Spark.readable('heartbeat', function heartbeat() {
 
       spark.__skipped += 1;
 
-      // Set reconnect to true so we're not sending a `primus::server::close`
-      // packet.
-      //
       if (spark.primus.options.allowSkippedHeartBeats >= spark.__skipped){
 
         spark.primus.emit('heartbeat-skipped', spark.__skipped);
 
-        heartBeatTimeout(spark.primus.timeout);
+        // Send unsolicited pong to keep client from closing its socket on pong timeout
+        spark.sendPong();
 
-      } else {
+        heartBeatTimeout(customTimeout);
 
-        spark.end(undefined, { reconnect: true });
+        return;
 
-        if (spark.primus.options.allowSkippedHeartBeats > 0) spark.primus.emit('flatline', spark.__skipped);
       }
+
+      //
+      // Set reconnect to true so we're not sending a `primus::server::close`
+      // packet.
+      //
+      spark.end(undefined, { reconnect: true });
+
+      if (spark.primus.options.allowSkippedHeartBeats > 0) spark.primus.emit('flatline', spark.__skipped);
 
     }, delay);
   };
 
-  heartBeatTimeout(spark.primus.timeout);
+  heartBeatTimeout(customTimeout);
 
   // Emit an event so the application can know the timer has been reset.
   spark.emit('heartbeat');
 
   return this;
+});
+
+/**
+ * Send pong but deduplicate pongs sent within span of pongSkipTime
+ * to prevent high latencies causing the heartbeat skip algorithm
+ * to amplify the pong count.
+ *
+ * @api private
+ */
+Spark.readable('sendPong', function sendPong(time) {
+  var now = Date.now();
+
+  time = time || now;
+
+  if (!this._lastPong) {
+    this.emit('outgoing::pong', time);
+    this._write('primus::pong::'+ time);
+    this._lastPong = now;
+    return;
+  }
+
+  if (now - this._lastPong < this.primus.options.pongSkipTime) {
+    return;
+  }
+
+  this.emit('outgoing::pong', time);
+  this._write('primus::pong::'+ time);
+  this._lastPong = now;
 });
 
 /**
@@ -218,7 +282,10 @@ Spark.readable('__initialise', [function initialise() {
     // New data has arrived so we're certain that the connection is still alive,
     // so it's save to restart the heartbeat sequence.
     //
-    spark.heartbeat();
+
+    // Must not reset heartbeat on ANY incoming data because that will offset
+    // the time to send unsolicited pong at allowed heartbeat skip.
+    // spark.heartbeat();
 
     primus.decoder.call(spark, raw, function decoding(err, data) {
       //
@@ -248,8 +315,8 @@ Spark.readable('__initialise', [function initialise() {
   ultron.on('incoming::ping', function ping(time) {
     if (time === undefined) return spark.heartbeat();
 
-    spark.emit('outgoing::pong', time);
-    spark._write('primus::pong::'+ time);
+    spark.sendPong(time);
+    spark.heartbeat();
   });
 
   //
