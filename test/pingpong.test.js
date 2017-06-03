@@ -208,6 +208,95 @@ describe('pingpong', function () {
 
     });
 
+    context('with latency ' + latency +
+      ' (scaled down from ' + latency * scaleDown + ') and large payload exceeding allowed skip', function () {
+
+      // Ensure that connection resumes properly when large payload transmission time
+      // does not exceed allowedSkip time.
+
+
+      before('start client', function (done) {
+        this.timeout(20000);
+
+        this.relay.latency = latency;
+
+        this.client = new Client(this.primusServer);
+        this.client.start('http://localhost:' + relayPort, {
+          ping: defaultPing / scaleDown,
+          pong: defaultPong / scaleDown
+        }, done);
+      });
+
+      it('does expected event pattern', function (done) {
+        this.timeout(31000);
+        var _this = this;
+
+        // Ensure that the socket is disconnected when the pings
+        // are caught behind a large payload whose transmission time
+        // exceeds the allowedSkip at the server.
+
+        this.relay.startLargePayload();
+
+        function onFlatline() {
+          _this.primusServer.removeListener('flatline', onFlatline);
+          setTimeout(function () {
+            _this.relay.stopLargePayload(); // allows proper socket close()
+          }, 100);
+        }
+
+        this.primusServer.on('flatline', onFlatline);
+
+        setTimeout(function () {
+
+          _this.client.stop();
+
+          if (latency == ((defaultPong / 4) - 100) / scaleDown) {
+
+            expect(_this.client.eventPattern).to.eql([
+              'sent ping',
+              'skipped 1',
+              'received pong',
+              'sent ping',
+              'skipped 2',
+              'received pong',
+              'sent ping',
+              'flatline',
+              'reconnect',
+              'reconnected',
+              'sent ping',
+              'received pong'
+            ]);
+
+          } else if (latency == ((defaultPong / 4) + 100) / scaleDown) {
+
+            expect(_this.client.eventPattern).to.eql([
+              'sent ping',
+              'skipped 1',
+              'received pong',
+              'sent ping',
+              'skipped 2',
+              'received pong',
+              'sent ping',
+              'flatline',
+              'reconnect',
+              'reconnected',
+              'sent ping',
+              'skipped 1',
+              'received pong'
+            ]);
+
+          } else {
+            throw new Error('Missing test.');
+          }
+
+          done();
+
+        }, 30000);
+
+      });
+
+    });
+
   });
 
 });

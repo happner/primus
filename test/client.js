@@ -43,14 +43,17 @@ Client.prototype.start = function (url, opts, callback) {
   });
 
   this.client.on('reconnect', function () {
+    console.log('reconnect');
     _this.eventPattern.push('reconnect');
   });
 
   this.client.on('reconnected scheduled', function () {
+    console.log('reconnect scheduled');
     _this.eventPattern.push('reconnected scheduled');
   });
 
   this.client.on('reconnected', function () {
+    console.log('reconnected');
     _this.eventPattern.push('reconnected');
   });
 
