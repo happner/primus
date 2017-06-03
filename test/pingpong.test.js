@@ -72,18 +72,35 @@ describe('pingpong', function () {
           _this.client.stop();
 
           if (latency == ((defaultPong / 4) - 100) / scaleDown) {
-            expect(_this.client.eventPattern).to.eql([
-              'sent ping',
-              'received pong',
-              'sent ping',
-              'received pong',
-              'sent ping',
-              'received pong',
-              'sent ping',
-              'received pong',
-              'sent ping',
-              'received pong'
-            ]);
+            try {
+              expect(_this.client.eventPattern).to.eql([
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'received pong'
+              ]);
+            } catch (e) {
+              expect(_this.client.eventPattern).to.eql([
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'received pong',
+                'sent ping',
+                'skipped 1', // varies slightly according to test cpu
+                'received pong'
+              ]);
+            }
+
           } else if (latency == ((defaultPong / 4) + 100) / scaleDown) {
 
             try {
