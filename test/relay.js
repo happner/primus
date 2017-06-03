@@ -54,37 +54,64 @@ Relay.prototype.close = function () {
   });
 };
 
-Relay.prototype._handleConnection = function (socket) {
+Relay.prototype._handleConnection = function (inSocket) {
   var _this = this;
 
-  this.inSockets.push(socket);
+  this.inSockets.push(inSocket);
 
-  var forwardSocket = net.connect(this.forwardToPort);
-  this.outSockets.push(forwardSocket);
+  var outSocket = net.connect(this.forwardToPort);
+  this.outSockets.push(outSocket);
 
-  socket.on('close', function () {
-    socket.__closed = true;
-    _this.inSockets.splice(_this.inSockets.indexOf(socket), 1);
-    forwardSocket.destroy(); // relay close
+  inSocket.on('close', function () {
+    inSocket.__closed = true;
+    _this.inSockets.splice(_this.inSockets.indexOf(inSocket), 1);
+    outSocket.destroy(); // relay close
   });
 
-  socket.on('data', function (buf) {
+  inSocket.on('data', function (buf) {
     // console.log('IN:\n', buf.toString());
     setTimeout(function () { // delay relay data
-      if (!forwardSocket.__closed) forwardSocket.write(buf);
+      if (!outSocket.__closed) outSocket.write(buf);
     }, _this.latency);
   });
 
-  forwardSocket.on('close', function () {
-    forwardSocket.__closed = true;
-    _this.outSockets.splice(_this.outSockets.indexOf(forwardSocket), 1);
-    socket.destroy(); // relay close
+  outSocket.on('close', function () {
+    outSocket.__closed = true;
+    _this.outSockets.splice(_this.outSockets.indexOf(outSocket), 1);
+    inSocket.destroy(); // relay close
   });
 
-  forwardSocket.on('data', function (buf) {
+  outSocket.on('data', function (buf) {
     // console.log('OUT:\n', buf.toString());
     setTimeout(function () { // delay relay data
-      if (!socket.__closed) socket.write(buf);
+      if (!inSocket.__closed) inSocket.write(buf);
     }, _this.latency);
   });
+};
+
+Relay.prototype.startLargePayload = function () {
+
+  console.log('start large payload');
+
+  // Cork the outbound socket (to server) so that buffer accumulates.
+  // Results in pings queueing up (instead of arriving at server) as if after a large payload.
+
+  // Only corking the most recently added socket.
+
+  var outSocket = this.outSockets[this.outSockets.length - 1];
+  outSocket.cork();
+
+};
+
+Relay.prototype.stopLargePayload = function () {
+
+  console.log('stop large payload');
+
+  // Uncork all sockets because a new (reconnected one) may have been
+  // added at the array's tail.
+
+  this.outSockets.forEach(function (outSocket) {
+    outSocket.uncork();
+  });
+
 };

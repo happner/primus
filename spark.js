@@ -63,7 +63,7 @@ function Spark(primus, headers, address, query, id, request) {
     this.query.ping = '25000'; // default as already deployed older clients
   }
   if (!this.query.pong) {
-    this.query.ping = '10000'; // default as already deployed older clients
+    this.query.pong = '10000'; // default as already deployed older clients
   }
 
   //
@@ -78,6 +78,8 @@ function Spark(primus, headers, address, query, id, request) {
 
   this.query.ping = parseInt(this.query.ping);
   this.query.pong = parseInt(this.query.pong);
+
+  console.log(this.query);
 
   this.heartbeat().__initialise.forEach(function execute(initialise) {
     initialise.call(spark);
@@ -130,13 +132,20 @@ Spark.get('address', function address() {
 Spark.readable('heartbeat', function heartbeat() {
   var spark = this;
 
-  clearTimeout(spark.timeout);
+  // Timeout set according to client's ping and pong values:
+  // 1. Timeout longer than client `ping timeout` to prevent early skip resulting in unnecessary
+  //    unsolicited pongs being sent. Also to support possible client implemtations when next ping
+  //    timeout is reset on arriving pong, resulting in it never sending a ping.
+  // 2. Timeout shorter that client `ping timeout + pong timeout` so that the unsolicited
+  //    pong as sent at skip arrives at the client in time.
+  //
+  var customTimeout = this.query.ping + (this.query.pong / 2);
 
-  if (!spark.primus.timeout) return spark;
+  clearTimeout(spark.timeout);
 
   spark.__skipped = 0;
 
-  log('setting new heartbeat timeout for %s', spark.id);
+  log('setting new heartbeat timeout for %s as %dms', spark.id, customTimeout);
 
   var heartBeatTimeout = function(delay){
 
@@ -144,39 +153,31 @@ Spark.readable('heartbeat', function heartbeat() {
 
       spark.__skipped += 1;
 
-      // Set reconnect to true so we're not sending a `primus::server::close`
-      // packet.
-      //
       if (spark.primus.options.allowSkippedHeartBeats >= spark.__skipped){
 
         spark.primus.emit('heartbeat-skipped', spark.__skipped);
 
-        // Send unsolicited pong to keep client from closing it's socket on pong timeout
+        // Send unsolicited pong to keep client from closing its socket on pong timeout
         spark.sendPong();
 
-        heartBeatTimeout(spark.primus.timeout);
+        heartBeatTimeout(customTimeout);
 
-      } else {
+        return;
 
-        spark.end(undefined, { reconnect: true });
-
-        if (spark.primus.options.allowSkippedHeartBeats > 0) spark.primus.emit('flatline', spark.__skipped);
       }
+
+      //
+      // Set reconnect to true so we're not sending a `primus::server::close`
+      // packet.
+      //
+      spark.end(undefined, { reconnect: true });
+
+      if (spark.primus.options.allowSkippedHeartBeats > 0) spark.primus.emit('flatline', spark.__skipped);
 
     }, delay);
   };
 
-  // Timeout set according to client's ping and pong values:
-  // 1. Timeout longer than client `ping timeout` so that skip would send unsolicited
-  //    pong after client sends ping but does not send pong before client sends
-  //    ping because then client will endlessly reset new ping timeout on
-  //    arriving pong and therefore never send a ping and server would
-  //    continuously skip until allowedSkip is exceeded and then close the socket.
-  // 2. Timeout shorter that client `ping timeout + pong timeout` so that the unsolicited
-  //    pong as sent at skip arrives at the client in time.
-  //
-  // heartBeatTimeout(spark.primus.timeout);
-  heartBeatTimeout(this.query.ping + (this.query.pong / 2));
+  heartBeatTimeout(customTimeout);
 
   // Emit an event so the application can know the timer has been reset.
   spark.emit('heartbeat');
