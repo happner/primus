@@ -85,22 +85,63 @@ describe('pingpong', function () {
               'received pong'
             ]);
           } else if (latency == ((defaultPong / 4) + 100) / scaleDown) {
-            expect(_this.client.eventPattern).to.eql([
-              'sent ping',
-              'skipped 1',
-              'received pong',
-              'sent ping',
-              'skipped 1', // High latency causes skip at server...
-              'received pong',
-              'sent ping',
-              'skipped 1', // but the skip count is reset when the next ping arrives.
-              'received pong',
-              'sent ping',
-              'skipped 1',
-              'received pong',
-              'sent ping',
-              'skipped 1'
-            ]);
+
+            try {
+              expect(_this.client.eventPattern).to.eql([
+                'sent ping',
+                'skipped 1',
+                'received pong',
+                'sent ping',
+                'skipped 1', // High latency causes skip at server...
+                'received pong',
+                'sent ping',
+                'skipped 1', // but the skip count is reset when the next ping arrives.
+                'received pong',
+                'sent ping',
+                'skipped 1',
+                'received pong',
+                'sent ping',
+                'skipped 1'
+              ]);
+            } catch (e) {
+              try {
+                expect(_this.client.eventPattern).to.eql([
+                  'sent ping',
+                  'skipped 1',
+                  'received pong',
+                  'sent ping',
+                  'skipped 1',
+                  'received pong',
+                  'sent ping',
+                  'skipped 1',
+                  'received pong',
+                  'sent ping',
+                  // 'skipped 1', // varies slightly according to test cpu
+                  'received pong',
+                  'sent ping',
+                  'skipped 1'
+                ]);
+              } catch (e) {
+                expect(_this.client.eventPattern).to.eql([
+                  'sent ping',
+                  'skipped 1',
+                  'received pong',
+                  'sent ping',
+                  // 'skipped 1', // varies slightly according to test cpu
+                  'received pong',
+                  'sent ping',
+                  'skipped 1',
+                  'received pong',
+                  'sent ping',
+                  // 'skipped 1', // varies slightly according to test cpu
+                  'received pong',
+                  'sent ping',
+                  'skipped 1'
+                ]);
+              }
+            }
+
+
           } else {
             throw new Error('Missing test.');
           }
@@ -178,26 +219,40 @@ describe('pingpong', function () {
               ]);
             } else if (latency == ((defaultPong / 4) + 100) / scaleDown) {
 
-              if (_this.client.eventPattern[_this.client.eventPattern.length - 1] != 'skipped 1') {
-                // timeout is borderline on this last event being present
-                _this.client.eventPattern.push('skipped 1');
+              try {
+                expect(_this.client.eventPattern).to.eql([
+                  'sent ping',
+                  'skipped 1',
+                  'received pong',
+                  'sent ping',
+                  'skipped 2',
+                  'received pong',
+                  'sent ping',
+                  'received pong',
+                  'sent ping',
+                  'skipped 1',
+                  'received pong',
+                  'sent ping',
+                  'skipped 1'
+                ]);
+              } catch (e) {
+                expect(_this.client.eventPattern).to.eql([
+                  'sent ping',
+                  'skipped 1',
+                  'received pong',
+                  'sent ping',
+                  'skipped 2',
+                  'received pong',
+                  'sent ping',
+                  'received pong',
+                  'sent ping',
+                  'skipped 1',
+                  'received pong',
+                  'sent ping'
+                  // 'skipped 1' // varies according to test cpu
+                ]);
               }
 
-              expect(_this.client.eventPattern).to.eql([
-                'sent ping',
-                'skipped 1',
-                'received pong',
-                'sent ping',
-                'skipped 2',
-                'received pong',
-                'sent ping',
-                'received pong',
-                'sent ping',
-                'skipped 1',
-                'received pong',
-                'sent ping',
-                'skipped 1'
-              ]);
             } else {
               throw new Error('Missing test.');
             }
