@@ -458,7 +458,7 @@ The following options can be provided:
 | ----------- | --------------------------------------- | ----------------------------- |
 | [reconnect] | Configures the exponential back off     | `{}`                          |
 | timeout     | Connect time out                        | `10000` ms                    |
-| ping        | Ping interval to test connection        | `25000` ms (0 to disable)     |
+| ping        | Ping interval to test connection        | `25000` ms (false to disable)     |
 | pong        | Time the server has to respond to ping  | `10000` ms                    |
 | [strategy]  | Our reconnect strategies                | `"disconnect,online,timeout"` |
 | manual      | Manually open the connection            | `false`                       |
